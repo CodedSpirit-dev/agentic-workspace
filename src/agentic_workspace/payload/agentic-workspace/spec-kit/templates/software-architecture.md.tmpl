@@ -1,0 +1,86 @@
+---
+assessment_status: draft
+source_ids: []
+decision_ids: []
+convention_ids: []
+risk_ids: []
+verification_ids: []
+---
+
+# Software Architecture Assessment — {{PROJECT_TITLE}}
+
+**Decision owner:** `(TODO: confirm)`
+**Last reviewed:** {{DATE}}
+
+## Decision boundary
+
+- Software surface and repository/deployable: `(TODO: confirm)`
+- Boundary owner: `(TODO: confirm)`
+- In scope: `(TODO: confirm)`
+- Out of scope: `(TODO: confirm)`
+- Existing architecture and measured pain: `(TODO: confirm)`
+
+## Specification evidence
+
+| Requirement/spec | Forcing constraint or change pattern | Confidence |
+|---|---|---|
+| `(TODO: confirm)` | `(TODO: confirm)` | `(TODO: confirm)` |
+
+## Candidate evaluation
+
+Score applicable criteria from 0 (conflicts) to 3 (strong fit), or `N/A` when a
+criterion is outside this decision boundary. Cite evidence; do not score
+unknowns as favorable or aggregate distinct software surfaces.
+
+| Candidate | Scope | Change | Dependencies | Delivery | UI | Team | Adoption | Verification | Evidence/conflict |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| Feature-Sliced Design | — | — | — | — | — | — | — | — | `(TODO: confirm)` |
+| Clean Architecture | — | — | — | — | — | — | — | — | `(TODO: confirm)` |
+| Vertical Slice Architecture | — | — | — | — | — | — | — | — | `(TODO: confirm)` |
+| Atomic Design (UI companion) | — | — | — | — | — | — | — | — | `(TODO: confirm)` |
+| Package by technical layer | — | — | — | — | — | — | — | — | `(TODO: confirm)` |
+
+## Recommendation
+
+- Primary method for this decision boundary: `(TODO: confirm)`
+- Bounded companions: `(TODO: confirm)`
+- Boundary owned by each method: `(TODO: confirm)`
+- Why this is the smallest sufficient architecture: `(TODO: confirm)`
+
+## Dependency and public API rules
+
+- Allowed dependency direction: `(TODO: confirm)`
+- Slice/module ownership: `(TODO: confirm)`
+- Public entry points and deep-import policy: `(TODO: confirm)`
+- Shared-code extraction trigger: `(TODO: confirm)`
+- UI composition policy, if applicable: `(TODO: confirm)`
+
+## Representative change
+
+Map one requirement or use case to the proposed modules and list which files or
+boundaries should change. `(TODO: confirm)`
+
+## Adoption and recovery
+
+- Incremental stages and repository/deployable owner: `(TODO: confirm)`
+- Behavior and paths that remain stable: `(TODO: confirm)`
+- Budget and stop/rollback point: `(TODO: confirm)`
+
+## Alternatives and consequences
+
+| Alternative | Evidence-based reason not selected | Reconsider when |
+|---|---|---|
+| `(TODO: confirm)` | `(TODO: confirm)` | `(TODO: confirm)` |
+
+## Traceability and proof
+
+- Machine-readable IDs and assessment status: frontmatter above.
+- Decision rationale and owner: `(TODO: confirm)`
+- Review date or trigger: `(TODO: confirm)`
+
+Keep `assessment_status: draft` while evidence is incomplete. Before changing
+it to `proposed`, list real `REQ-*`/`SPC-*` sources and draft `DEC-*` IDs, then
+relate each decision as `DEC-* derived_from REQ-*|SPC-*`. Before `accepted`,
+activate its decision and conventions, list at least one verification, and
+connect every listed companion to the decision graph. Use `project-kit relate`
+for authoritative relationships. Do not edit generated registry indexes.

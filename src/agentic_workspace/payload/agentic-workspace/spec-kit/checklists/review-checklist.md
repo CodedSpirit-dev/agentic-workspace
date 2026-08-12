@@ -34,6 +34,11 @@ Apply these only when the corresponding optional module is listed in
   types, and meanings.
 - `metric-catalog`: every formula deviation has a reason and approver.
 - `migration-control`: every row has a current status, owner, and date.
+- `software-architecture`: the assessment cites project requirements or specs,
+  compares applicable methods with one rubric, assigns distinct boundaries to
+  any hybrid, and its frontmatter status agrees with the registered `DEC-*`,
+  enforceable conventions, risks, verifications, and relations required by that
+  state.
 - Any installed extension: every release or audit gate declared by that
   extension has evidence. An extension must not silently add universal rules.
 

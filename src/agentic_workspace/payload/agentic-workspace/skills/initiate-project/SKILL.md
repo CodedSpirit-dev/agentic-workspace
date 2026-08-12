@@ -22,10 +22,16 @@ agentic-workspace/spec-kit/bin/project-kit init <name> \
   --mode <traditional|sprint|flexible> --profile <profile>
 ```
 
-6. Fill the generated charter, requirements, plan, status, and first cycle.
+6. If the specs create or materially change software architecture, propose the
+   optional `software-architecture` module. Enable it only after explicit
+   adoption, either with `--with software-architecture` during initialization
+   or `project-kit add-module <project> software-architecture`; then use
+   `select-software-architecture`. Do not enable it for non-software projects or
+   silently replace a working architecture.
+7. Fill the generated charter, requirements, plan, status, and first cycle.
    Create typed artifacts with the CLI; never allocate IDs or edit generated
    indexes manually.
-7. Run `project-kit validate <project> --strict-index` and report unresolved
+8. Run `project-kit validate <project> --strict-index` and report unresolved
    intake questions separately from validation failures.
 
 Promoting an existing task or plan must retain its original identifier and

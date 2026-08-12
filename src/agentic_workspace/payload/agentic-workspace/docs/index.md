@@ -22,8 +22,9 @@ Read only the documents relevant to the current task.
   Hermes consume the same workspace.
 - [`platforms.md`](platforms.md): portable commands for Windows, Linux, and
   macOS.
-- [`../extensions/`](../extensions/): optional stack- or domain-specific
-  guidance. Its rules apply only after explicit repository adoption.
+- [`../extensions/`](../extensions/): optional stack- and domain-specific
+  guidance. Software projects can explicitly enable the architecture selector;
+  extension rules apply only after project adoption.
 
 ## Active work
 

@@ -69,9 +69,19 @@ class InstallerTests(unittest.TestCase):
 
         for skill_root in (".agents/skills", ".claude/skills", ".hermes/skills"):
             self.assertTrue((self.repo / skill_root / "track-project/SKILL.md").is_file())
+            self.assertTrue(
+                (
+                    self.repo
+                    / skill_root
+                    / "select-software-architecture/SKILL.md"
+                ).is_file()
+            )
         self.assertTrue((self.repo / ".codex/agents/project-steward.toml").is_file())
+        self.assertTrue((self.repo / ".codex/agents/software-architect.toml").is_file())
         self.assertTrue((self.repo / ".claude/agents/project-steward.md").is_symlink())
+        self.assertTrue((self.repo / ".claude/agents/software-architect.md").is_symlink())
         self.assertTrue((self.repo / ".hermes/agents/project-steward.md").is_symlink())
+        self.assertTrue((self.repo / ".hermes/agents/software-architect.md").is_symlink())
 
         codex_hooks = json.loads((self.repo / ".codex/hooks.json").read_text())
         claude_settings = json.loads((self.repo / ".claude/settings.json").read_text())

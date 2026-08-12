@@ -28,4 +28,7 @@ unchecked.
       required ecosystem convention.
 - [ ] Every unknown at creation time is marked `(TODO: confirm)`, not left
       blank.
+- [ ] If `software-architecture` is enabled, its assessment names the decision
+      boundary and source requirements/specs; no architecture has been selected
+      from framework preference alone.
 - [ ] `project-kit validate <project> --strict-index` returns `PASS`.

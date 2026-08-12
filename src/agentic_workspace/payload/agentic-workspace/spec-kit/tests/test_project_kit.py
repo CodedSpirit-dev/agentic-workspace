@@ -156,6 +156,109 @@ class ProjectKitTests(unittest.TestCase):
         registry = json.loads((project / "registry/project.json").read_text())
         self.assertEqual(1, registry["modules"].count("metric-catalog"))
 
+    def test_software_architecture_module_is_opt_in_and_seeded(self):
+        project = self.init("minimal")
+        assessment = project / "software-architecture.md"
+        self.assertFalse(assessment.exists())
+
+        self.run_cli("add-module", project, "software-architecture")
+
+        registry = json.loads((project / "registry/project.json").read_text())
+        self.assertIn("software-architecture", registry["modules"])
+        self.assertTrue(assessment.is_file())
+        self.assertTrue((project / "registry/conventions").is_dir())
+        assessment_text = assessment.read_text()
+        self.assertIn("Feature-Sliced Design", assessment_text)
+        self.assertIn("Software Architecture Assessment — Test Project", assessment_text)
+        self.assertNotIn("{{", assessment_text)
+        self.run_cli("validate", project, "--strict-index")
+
+        assessment.write_text(
+            assessment_text.replace("assessment_status: draft", "assessment_status: proposed")
+        )
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("proposed assessment requires source_ids", result.stdout)
+        self.assertIn("proposed assessment requires decision_ids", result.stdout)
+
+        self.run_cli("create", project, "requirement", "--title", "Change boundary")
+        self.run_cli(
+            "decision", "create", project, "--title", "Select architecture"
+        )
+        self.run_cli("relate", project, "DEC-001", "derived_from", "REQ-001")
+        proposed_text = assessment.read_text().replace(
+            "source_ids: []\ndecision_ids: []",
+            'source_ids: ["REQ-001"]\ndecision_ids: ["DEC-001"]',
+        )
+        assessment.write_text(proposed_text)
+        self.run_cli("validate", project, "--strict-index")
+
+        self.run_cli("artifact", "set-status", project, "DEC-001", "rejected")
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("DEC-001 must be draft for a proposed assessment", result.stdout)
+        self.run_cli("artifact", "set-status", project, "DEC-001", "draft")
+        self.run_cli("validate", project, "--strict-index")
+
+        assessment.write_text(
+            proposed_text.replace("assessment_status: proposed", "assessment_status: accepted")
+        )
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("accepted assessment requires convention_ids", result.stdout)
+        self.assertIn("accepted assessment requires verification_ids", result.stdout)
+
+        self.run_cli(
+            "create", project, "convention", "--title", "Dependency direction", "--status", "active"
+        )
+        self.run_cli(
+            "create", project, "verification", "--title", "Architecture checks", "--status", "active"
+        )
+        self.run_cli("artifact", "set-status", project, "DEC-001", "accepted")
+        self.run_cli("relate", project, "CONV-001", "implements", "DEC-001")
+        self.run_cli("relate", project, "VER-001", "verifies", "CONV-001")
+        accepted_text = assessment.read_text()
+        accepted_text = accepted_text.replace(
+            "convention_ids: []", 'convention_ids: ["CONV-001"]'
+        ).replace("verification_ids: []", 'verification_ids: ["VER-001"]')
+        assessment.write_text(accepted_text)
+        self.run_cli("validate", project, "--strict-index")
+
+        registry_path = project / "registry/project.json"
+        registry = json.loads(registry_path.read_text())
+        registry["relations"] = [
+            relation
+            for relation in registry["relations"]
+            if relation
+            not in (
+                {"source": "CONV-001", "type": "implements", "target": "DEC-001"},
+                {"source": "VER-001", "type": "verifies", "target": "CONV-001"},
+            )
+        ]
+        registry["relations"].extend(
+            [
+                {"source": "CONV-001", "type": "related", "target": "VER-001"},
+                {"source": "VER-001", "type": "related", "target": "CONV-001"},
+            ]
+        )
+        registry_path.write_text(json.dumps(registry, indent=2, sort_keys=True) + "\n")
+        self.run_cli("index", project)
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("CONV-001 must connect to a listed decision", result.stdout)
+        self.assertIn("VER-001 must connect to a listed decision", result.stdout)
+
+        self.run_cli(
+            "init",
+            "software-project",
+            "--root",
+            self.root,
+            "--profile",
+            "minimal",
+            "--with",
+            "software-architecture",
+        )
+        initialized = self.root / "software-project"
+        enabled = json.loads((initialized / "registry/project.json").read_text())
+        self.assertIn("software-architecture", enabled["modules"])
+        self.assertTrue((initialized / "software-architecture.md").is_file())
+
     def test_stable_ids_gaps_and_duplicate_rejection(self):
         project = self.init()
         self.run_cli("create", project, "exploration", "--title", "First")

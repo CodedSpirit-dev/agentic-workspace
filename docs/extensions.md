@@ -3,10 +3,11 @@
 ## Current behavior
 
 The installed product has one provider-neutral core. Spec Kit 2.1 also knows
-three optional data modules: `column-dictionary`, `metric-catalog`, and
-`migration-control`. They are activated per project with `project-kit
-add-module`; no profile enables them automatically. Optional data procedures
-live under `agentic-workspace/extensions/data/`.
+three optional data modules (`column-dictionary`, `metric-catalog`, and
+`migration-control`) plus the optional `software-architecture` module. They are
+activated per project with `project-kit add-module`; no profile enables them
+automatically. Their procedures live under `agentic-workspace/extensions/data/`
+and `agentic-workspace/extensions/software/`.
 
 There is no general extension loader in version 0.1. Adding files below
 `extensions/` alone does not register modules, skills, agents, validators, or
@@ -44,4 +45,6 @@ preserve these boundaries:
   validation.
 
 Before stabilizing a manifest, test at least one backend, frontend, and data
-extension against the same lifecycle and evidence model.
+extension against the same lifecycle and evidence model. The current software
+extension is deliberately one project module and shared selection procedure,
+not a manifest-based loader or a claim that one architecture fits every stack.

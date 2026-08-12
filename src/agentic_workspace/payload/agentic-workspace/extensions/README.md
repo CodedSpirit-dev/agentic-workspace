@@ -2,9 +2,16 @@
 
 Extensions contain stack- or domain-specific guidance that is not part of the
 portable core. Merely installing `agentic-workspace` does not activate their
-rules. A destination repository must explicitly enable an extension or link
-its procedures from repository documentation.
+rules. A destination must explicitly adopt the relevant guidance and, when an
+extension provides a Spec Kit module, enable that module per project.
 
-The current release ships data guidance and compatible optional Spec Kit
-modules. A general declarative extension loader is planned but not yet
-implemented; adding an extension directory alone has no runtime effect.
+Available extensions:
+
+- [`data/`](data/): optional column dictionary, metric catalog, migration, SQL,
+  and glossary guidance;
+- [`software/`](software/): evidence-based selection among FSD, Clean
+  Architecture, Vertical Slice Architecture, Atomic Design, and a simple
+  package-by-layer baseline.
+
+A general declarative extension loader is planned but not yet implemented.
+Adding an extension directory alone has no runtime effect.

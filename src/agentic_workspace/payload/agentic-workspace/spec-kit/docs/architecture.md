@@ -31,7 +31,8 @@ deleting old cycle history.
 - `complex`: adds analyses, project scripts, and portable agent orders.
 
 Modules may be added later. Profiles share one model and are not incompatible
-project types.
+project types. `software-architecture` is an opt-in module for projects that
+need a spec-driven architecture decision; no profile activates it implicitly.
 
 ## Artifact identity and relations
 

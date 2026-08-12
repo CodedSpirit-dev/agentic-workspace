@@ -18,7 +18,10 @@ py -3.11 agentic-workspace\spec-kit\bin\project-kit.py
 project-kit init example --mode traditional --profile standard
 project-kit init example --mode sprint --profile standard
 project-kit init example --mode flexible --profile complex
+project-kit init software-example --mode sprint --profile standard \
+  --with software-architecture
 project-kit add-module agentic-workspace/projects/example metric-catalog
+project-kit add-module agentic-workspace/projects/example software-architecture
 ```
 
 ## Cycles and project status

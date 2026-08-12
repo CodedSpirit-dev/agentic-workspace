@@ -27,7 +27,8 @@
     "agent-orders": {"files": [], "directories": ["registry/agent-orders", "registry/conventions"]},
     "column-dictionary": {"files": ["column-dictionary.yaml", "column-dictionary.md"], "directories": []},
     "metric-catalog": {"files": ["metric-catalog.md"], "directories": []},
-    "migration-control": {"files": ["migration-control.md"], "directories": []}
+    "migration-control": {"files": ["migration-control.md"], "directories": []},
+    "software-architecture": {"files": ["software-architecture.md"], "directories": ["registry/conventions"]}
   },
   "artifact_types": {
     "requirement": {"prefix": "REQ", "directory": "registry/requirements", "states": ["draft", "active", "accepted", "superseded", "archived"]},

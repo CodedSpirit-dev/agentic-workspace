@@ -78,6 +78,12 @@ All modes track requirements, tasks, decisions, risks, deliverables,
 verifications, status history, and evidence in the project registry. They may
 change cadence without discarding stable artifact IDs.
 
+For a software project that needs an architecture decision, add the opt-in
+`software-architecture` module and invoke `select-software-architecture`. It
+compares FSD, Clean Architecture, Vertical Slice Architecture, Atomic Design,
+and a simple package-by-layer baseline against the project's specs; it does not
+impose one structure on every repository.
+
 Create the first project after installation:
 
 ```bash

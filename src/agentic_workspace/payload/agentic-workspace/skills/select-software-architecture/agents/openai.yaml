@@ -1,0 +1,4 @@
+interface:
+  display_name: "Select Software Architecture"
+  short_description: "Compare specs and record an architecture decision"
+  default_prompt: "Evaluate this software project's specifications, compare suitable architecture methods, and prepare a traceable recommendation without reorganizing code."

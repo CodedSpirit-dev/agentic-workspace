@@ -55,6 +55,47 @@ def read_json(path: Path) -> dict:
         raise KitError(f"invalid JSON in {path}: {exc}") from exc
 
 
+def read_markdown_frontmatter(path: Path) -> tuple[dict, list[str]]:
+    """Read the small JSON-compatible YAML subset used by kit templates."""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return {}, [f"missing file: {path}"]
+    if not lines or lines[0] != "---":
+        return {}, [f"{path.name} missing frontmatter"]
+    try:
+        end = lines.index("---", 1)
+    except ValueError:
+        return {}, [f"{path.name} has unterminated frontmatter"]
+    data: dict[str, object] = {}
+    errors: list[str] = []
+    for number, line in enumerate(lines[1:end], start=2):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if ":" not in line:
+            errors.append(f"{path.name}:{number} invalid frontmatter field")
+            continue
+        key, raw = (part.strip() for part in line.split(":", 1))
+        if not key or key in data:
+            errors.append(f"{path.name}:{number} duplicate or empty field {key!r}")
+            continue
+        if raw.startswith("["):
+            try:
+                value = json.loads(raw)
+            except json.JSONDecodeError:
+                errors.append(f"{path.name}:{number} list must be valid JSON")
+                continue
+            if not isinstance(value, list) or not all(
+                isinstance(item, str) and item for item in value
+            ):
+                errors.append(f"{path.name}:{number} list must contain strings")
+                continue
+            data[key] = value
+        else:
+            data[key] = raw.strip("\"'")
+    return data, errors
+
+
 def contains_secret(value: object) -> bool:
     sensitive = {"password", "passwd", "token", "api_key", "api-key", "cookie", "pat"}
     if isinstance(value, dict):
@@ -935,6 +976,125 @@ def validate_order_context(ctx: dict, path: Path | None = None) -> list[str]:
     return errors
 
 
+def software_architecture_errors(project: Path, registry: dict) -> list[str]:
+    """Validate traceability once an architecture assessment leaves draft."""
+    path = project / "software-architecture.md"
+    data, errors = read_markdown_frontmatter(path)
+    required = {
+        "assessment_status",
+        "source_ids",
+        "decision_ids",
+        "convention_ids",
+        "risk_ids",
+        "verification_ids",
+    }
+    for field in sorted(required - set(data)):
+        errors.append(f"{path.name} missing frontmatter field {field}")
+    status = data.get("assessment_status")
+    if status not in {"draft", "proposed", "accepted"}:
+        errors.append(
+            f"{path.name} assessment_status must be draft, proposed, or accepted"
+        )
+
+    typed_fields = {
+        "source_ids": {"requirement", "spec"},
+        "decision_ids": {"decision"},
+        "convention_ids": {"convention"},
+        "risk_ids": {"risk"},
+        "verification_ids": {"verification"},
+    }
+    artifacts = {item.get("id"): item for item in registry.get("artifacts", [])}
+    values: dict[str, list[str]] = {}
+    for field, expected_types in typed_fields.items():
+        refs = data.get(field, [])
+        if not isinstance(refs, list):
+            errors.append(f"{path.name} {field} must be a JSON list of IDs")
+            refs = []
+        if len(refs) != len(set(refs)):
+            errors.append(f"{path.name} {field} contains duplicate IDs")
+        values[field] = refs
+        for reference in refs:
+            artifact = artifacts.get(reference)
+            if not artifact:
+                errors.append(f"{path.name} {field} missing artifact: {reference}")
+            elif artifact.get("type") not in expected_types:
+                expected = " or ".join(sorted(expected_types))
+                errors.append(
+                    f"{path.name} {reference} must be type {expected}, "
+                    f"not {artifact.get('type')}"
+                )
+
+    if status not in {"proposed", "accepted"}:
+        return errors
+
+    source_ids = set(values["source_ids"])
+    decision_ids = set(values["decision_ids"])
+    if not source_ids:
+        errors.append(f"{path.name} {status} assessment requires source_ids")
+    if not decision_ids:
+        errors.append(f"{path.name} {status} assessment requires decision_ids")
+    relations = registry.get("relations", [])
+    for decision_id in decision_ids:
+        if not any(
+            relation.get("source") == decision_id
+            and relation.get("type") == "derived_from"
+            and relation.get("target") in source_ids
+            for relation in relations
+        ):
+            errors.append(
+                f"{path.name} {decision_id} must be derived_from a listed source"
+            )
+        artifact = artifacts.get(decision_id)
+        if status == "proposed" and artifact and artifact.get("status") != "draft":
+            errors.append(f"{decision_id} must be draft for a proposed assessment")
+
+    companion_ids = set(
+        values["convention_ids"]
+        + values["risk_ids"]
+        + values["verification_ids"]
+    )
+    declared_graph = decision_ids | companion_ids
+    adjacency: dict[str, set[str]] = {artifact_id: set() for artifact_id in declared_graph}
+    for relation in relations:
+        source = relation.get("source")
+        target = relation.get("target")
+        if source in declared_graph and target in declared_graph:
+            adjacency[source].add(target)
+            adjacency[target].add(source)
+    reachable = set(decision_ids)
+    pending = list(decision_ids)
+    while pending:
+        current = pending.pop()
+        for neighbor in adjacency.get(current, set()):
+            if neighbor not in reachable:
+                reachable.add(neighbor)
+                pending.append(neighbor)
+    for companion_id in companion_ids:
+        if companion_id not in reachable:
+            errors.append(
+                f"{path.name} {companion_id} must connect to a listed decision"
+            )
+
+    if status == "accepted":
+        if not values["convention_ids"]:
+            errors.append(f"{path.name} accepted assessment requires convention_ids")
+        if not values["verification_ids"]:
+            errors.append(f"{path.name} accepted assessment requires verification_ids")
+        for decision_id in decision_ids:
+            artifact = artifacts.get(decision_id)
+            if artifact and artifact.get("status") != "accepted":
+                errors.append(f"{decision_id} must be accepted")
+        for convention_id in values["convention_ids"]:
+            artifact = artifacts.get(convention_id)
+            if artifact and artifact.get("status") != "active":
+                errors.append(f"{convention_id} must be active")
+        for verification_id in values["verification_ids"]:
+            artifact = artifacts.get(verification_id)
+            if artifact and artifact.get("status") not in {"active", "passed"}:
+                errors.append(f"{verification_id} must be active or passed")
+    return errors
+
+
 def validate_project(project: Path, strict_index: bool = False) -> list[str]:
     errors = []
     registry = load_registry(project)
@@ -1057,6 +1217,8 @@ def validate_project(project: Path, strict_index: bool = False) -> list[str]:
             "blocks",
         }:
             errors.append(f"prohibited self relation: {rel}")
+    if "software-architecture" in registry.get("modules", []):
+        errors.extend(software_architecture_errors(project, registry))
     order_ids = []
     for directory, ctx in order_contexts(project):
         order_ids.append(ctx.get("order_id"))
