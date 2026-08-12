@@ -17,6 +17,7 @@ sys.path.insert(0, str(PRODUCT / "src"))
 
 from agentic_workspace.cli import (  # noqa: E402
     Report,
+    adapter_matches,
     digest_path,
     ensure_link,
     hook_is_runnable,
@@ -166,6 +167,30 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual("agent\n", (self.repo / ".claude/agents/agent.md").read_text())
         self.assertFalse((self.repo / ".claude/skills/skill").is_symlink())
         self.assertEqual("skill\n", (self.repo / ".claude/skills/skill/SKILL.md").read_text())
+
+    def test_adapter_identity_does_not_depend_on_resolved_path_spelling(self):
+        source = self.repo / "agentic-workspace/canonical.md"
+        source.parent.mkdir()
+        source.write_text("canonical\n")
+        adapter = self.repo / ".claude/agents/canonical.md"
+        adapter.parent.mkdir(parents=True)
+        adapter.symlink_to("../../agentic-workspace/canonical.md")
+
+        with mock.patch.object(
+            Path,
+            "resolve",
+            side_effect=AssertionError("textual resolution must not be used"),
+        ):
+            self.assertTrue(adapter_matches(adapter, source))
+
+    def test_manifest_paths_use_portable_separators(self):
+        self.run_cli("install", self.repo)
+        manifest = json.loads(
+            (self.repo / "agentic-workspace/.managed-manifest.json").read_text()
+        )
+        for field in ("files", "links", "adapter_hashes", "generated_files"):
+            self.assertTrue(manifest[field])
+            self.assertTrue(all("\\" not in path for path in manifest[field]))
 
     def test_check_accepts_adapter_copy_and_rejects_missing_adapter(self):
         self.run_cli("install", self.repo)

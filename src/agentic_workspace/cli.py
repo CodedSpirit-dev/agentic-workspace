@@ -11,7 +11,7 @@ import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from pathlib import PureWindowsPath
+from pathlib import PurePosixPath, PureWindowsPath
 
 from . import __version__
 
@@ -62,6 +62,16 @@ def display_path(path: Path, root: Path) -> str:
         return str(path)
 
 
+def portable_relative(path: Path, root: Path) -> str:
+    """Serialize a repository-relative path independently of the host OS."""
+    return path.relative_to(root).as_posix()
+
+
+def portable_path(value: str) -> Path:
+    """Read POSIX or legacy Windows separators from persisted state."""
+    return Path(*PurePosixPath(value.replace("\\", "/")).parts)
+
+
 def digest_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
@@ -82,7 +92,7 @@ def digest_path(path: Path) -> str:
         if item.is_symlink():
             raise InstallError(f"managed copy contains a symlink: {item}")
         if item.is_file():
-            digest.update(str(item.relative_to(path)).encode("utf-8"))
+            digest.update(item.relative_to(path).as_posix().encode("utf-8"))
             digest.update(b"\0")
             digest.update(item.read_bytes())
             digest.update(b"\0")
@@ -104,7 +114,7 @@ def require_contained(path: Path, target: Path, *, parent: bool = False) -> Path
 def managed_path(target: Path, rel: str) -> Path:
     if not isinstance(rel, str):
         raise InstallError(f"managed path must be a string: {rel!r}")
-    value = Path(rel)
+    value = portable_path(rel)
     windows_value = PureWindowsPath(rel)
     if value.is_absolute() or windows_value.is_absolute() or windows_value.drive:
         raise InstallError(f"managed path must be repository-relative: {rel}")
@@ -175,18 +185,19 @@ def copy_payload(target: Path, previous: dict, report: Report) -> dict[str, str]
         and path.suffix not in {".pyc", ".pyo"}
     ):
         rel = source.relative_to(PAYLOAD_ROOT)
+        rel_key = rel.as_posix()
         destination = require_contained(target / rel, target, parent=True)
         new_hash = digest_file(source)
-        hashes[str(rel)] = new_hash
+        hashes[rel_key] = new_hash
         existed = destination.exists() or destination.is_symlink()
         safe = not existed
         if existed and destination.is_file() and not destination.is_symlink():
             current_hash = digest_file(destination)
-            safe = current_hash == new_hash or current_hash == previous_hashes.get(str(rel))
+            safe = current_hash == new_hash or current_hash == previous_hashes.get(rel_key)
         if not safe:
-            report.preserved.append(str(rel))
+            report.preserved.append(rel_key)
             report.warnings.append(f"kept locally modified managed file: {rel}")
-            hashes[str(rel)] = previous_hashes.get(str(rel), new_hash)
+            hashes[rel_key] = previous_hashes.get(rel_key, new_hash)
             continue
         if existed and destination.is_file() and digest_file(destination) == new_hash:
             continue
@@ -327,7 +338,7 @@ def ensure_link(
         raise InstallError(f"adapter source is outside the packaged payload: {source}")
     if not source.exists():
         raise InstallError(f"adapter source does not exist: {source}")
-    if link.is_symlink() and os.readlink(link) == target and link.resolve(strict=False) == source:
+    if adapter_matches(link, source):
         return True
     if link.exists() and not link.is_symlink() and same_content(link, source):
         return True
@@ -354,7 +365,7 @@ def ensure_link(
         return True
     link.parent.mkdir(parents=True, exist_ok=True)
     try:
-        link.symlink_to(target, target_is_directory=source.is_dir())
+        link.symlink_to(portable_path(target), target_is_directory=source.is_dir())
     except (NotImplementedError, OSError):
         if source.is_dir():
             shutil.copytree(source, link)
@@ -443,7 +454,7 @@ def install_adapters(
             (target / ".hermes/skills", f"../../agentic-workspace/skills/{name}"),
         ):
             link = base / name
-            rel = str(link.relative_to(target))
+            rel = portable_relative(link, target)
             if ensure_link(
                 link,
                 rel_target,
@@ -465,7 +476,7 @@ def install_adapters(
             f"description = {toml_string(description)}\n"
             f"developer_instructions = {toml_string(instructions)}\n"
         )
-        codex_rel = str(codex.relative_to(target))
+        codex_rel = portable_relative(codex, target)
         generated_hash = write_generated_text(
             codex, codex_text, previous_generated.get(codex_rel), report
         )
@@ -476,7 +487,7 @@ def install_adapters(
             (target / ".hermes/agents", f"../../agentic-workspace/agents/{source.name}"),
         ):
             link = base / source.name
-            rel = str(link.relative_to(target))
+            rel = portable_relative(link, target)
             if ensure_link(
                 link,
                 rel_target,
@@ -762,7 +773,7 @@ def adapter_specs(target: Path) -> list[tuple[Path, Path]]:
 def adapter_matches(path: Path, source: Path) -> bool:
     if path.is_symlink():
         try:
-            return path.resolve(strict=True) == source.resolve(strict=True)
+            return path.samefile(source)
         except (OSError, RuntimeError):
             return False
     return path.exists() and same_content(path, source)
@@ -906,7 +917,9 @@ def check(args: argparse.Namespace) -> int:
     for rel, rel_target in manifest.get("links", {}).items():
         try:
             link = managed_path(target, rel)
-            source = require_contained((link.parent / rel_target).resolve(strict=False), target)
+            source = require_contained(
+                (link.parent / portable_path(rel_target)).resolve(strict=False), target
+            )
         except InstallError as exc:
             failures.append(str(exc))
             continue
