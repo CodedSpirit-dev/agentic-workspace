@@ -795,7 +795,7 @@ def git_hook_connection(target: Path) -> tuple[bool, str]:
     expected = "agentic-workspace/hooks/git"
     canonical = target / "agentic-workspace/hooks/git/commit-msg"
     if configured == expected:
-        if canonical.is_file() and not canonical.is_symlink() and os.access(canonical, os.X_OK):
+        if hook_is_runnable(canonical):
             return True, configured
         return False, "canonical commit-msg hook is missing or not executable"
     if not configured:
@@ -821,15 +821,28 @@ def git_hook_connection(target: Path) -> tuple[bool, str]:
     )
 
 
+def hook_is_runnable(path: Path, platform: str | None = None) -> bool:
+    """Check hook viability using the host's execution model.
+
+    Git for Windows executes hook scripts through its bundled shell and does
+    not expose a meaningful POSIX executable bit through ``os.access``. POSIX
+    hosts must still require the executable bit so Git does not ignore a hook.
+    """
+    if path.is_symlink() or not path.is_file():
+        return False
+    platform = os.name if platform is None else platform
+    return platform == "nt" or os.access(path, os.X_OK)
+
+
 def hook_invokes_canonical(hook: Path, canonical: Path, target: Path) -> bool:
-    if canonical.is_symlink() or not canonical.is_file() or not os.access(canonical, os.X_OK):
+    if not hook_is_runnable(canonical):
         return False
     if hook.is_symlink():
         try:
             return hook.resolve(strict=True) == canonical.resolve(strict=True)
         except (OSError, RuntimeError):
             return False
-    if not hook.is_file() or not os.access(hook, os.X_OK):
+    if not hook_is_runnable(hook):
         return False
     text = hook.read_text(encoding="utf-8", errors="replace")
     first_line = text.splitlines()[0] if text.splitlines() else ""

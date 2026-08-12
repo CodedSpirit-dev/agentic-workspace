@@ -175,17 +175,25 @@ class DistributionTests(unittest.TestCase):
             capture_output=True,
             check=True,
         )
-        subprocess.run(
+        install_result = subprocess.run(
             [str(self.agentic_workspace), "install", str(repository)],
             text=True,
             capture_output=True,
-            check=True,
         )
-        subprocess.run(
+        self.assertEqual(
+            0,
+            install_result.returncode,
+            f"install failed\nstdout:\n{install_result.stdout}\nstderr:\n{install_result.stderr}",
+        )
+        check_result = subprocess.run(
             [str(self.agentic_workspace), "check", str(repository)],
             text=True,
             capture_output=True,
-            check=True,
+        )
+        self.assertEqual(
+            0,
+            check_result.returncode,
+            f"check failed\nstdout:\n{check_result.stdout}\nstderr:\n{check_result.stderr}",
         )
 
         guard = repository / "agentic-workspace/hooks/providers" / (

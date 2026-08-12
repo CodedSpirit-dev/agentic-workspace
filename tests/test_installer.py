@@ -19,6 +19,7 @@ from agentic_workspace.cli import (  # noqa: E402
     Report,
     digest_path,
     ensure_link,
+    hook_is_runnable,
     provider_hook_command,
     save_manifest,
 )
@@ -306,6 +307,17 @@ class InstallerTests(unittest.TestCase):
         result = self.run_cli("check", self.repo, ok=False)
 
         self.assertIn("Git commit guard is disconnected", result.stdout)
+
+    def test_hook_runnable_uses_platform_execution_semantics(self):
+        hook = self.repo / "commit-msg"
+        hook.write_text("#!/bin/sh\nexit 0\n")
+        hook.chmod(0o644)
+
+        self.assertFalse(hook_is_runnable(hook, "posix"))
+        self.assertTrue(hook_is_runnable(hook, "nt"))
+
+        hook.chmod(0o755)
+        self.assertTrue(hook_is_runnable(hook, "posix"))
 
     def test_custom_hook_cannot_neutralize_guard_exit_status(self):
         self.run_cli("install", self.repo)
