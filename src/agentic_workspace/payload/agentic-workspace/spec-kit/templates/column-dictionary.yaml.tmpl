@@ -1,0 +1,19 @@
+# Machine-readable companion to column-dictionary.md.
+# Scope: per-project — only the tables/columns THIS project touches.
+# This is not the repo-wide data dictionary (if one exists elsewhere in your
+# repo, e.g. a mcp_dictionary/dictionary.yaml) — do not confuse the two.
+# On conflict with column-dictionary.md, this file is the source of truth;
+# treat any disagreement between the two as a bug to fix immediately.
+
+version: 1
+project: "{project_name}"
+
+columns:
+  - name: "{canonical_name}"
+    dtype: "{dtype}"
+    unit: "{unit_or_null}"
+    source: "{source_table.source_column}"
+    aliases:
+      - "{alias_seen_in_pipeline_a}"
+      - "{alias_seen_in_pipeline_b}"
+    notes: "{plain-language meaning, or (TODO: confirm)}"

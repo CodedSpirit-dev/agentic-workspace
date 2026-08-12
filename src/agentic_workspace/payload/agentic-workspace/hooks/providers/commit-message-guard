@@ -1,0 +1,21 @@
+#!/bin/sh
+# Portable POSIX launcher for the provider commit-message guard.
+
+case "$0" in
+    */*) script_dir=${0%/*} ;;
+    *) script_dir=. ;;
+esac
+script_dir=$(CDPATH= cd -- "$script_dir" && pwd -P) || exit 127
+
+if command -v python3 >/dev/null 2>&1; then
+    exec python3 "$script_dir/commit-message-guard.py"
+fi
+if command -v python >/dev/null 2>&1; then
+    exec python "$script_dir/commit-message-guard.py"
+fi
+if command -v py >/dev/null 2>&1; then
+    exec py -3 "$script_dir/commit-message-guard.py"
+fi
+
+echo "ERROR: the commit policy guard requires Python 3.11 or newer" >&2
+exit 127

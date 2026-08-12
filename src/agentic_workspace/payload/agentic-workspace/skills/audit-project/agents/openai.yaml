@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Auditor"
+  short_description: "Audit project traceability and closure readiness"
+  default_prompt: "Use $audit-project to independently audit the project registry, evidence, and open gates."

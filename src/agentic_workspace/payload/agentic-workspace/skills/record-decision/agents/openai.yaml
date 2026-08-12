@@ -1,0 +1,4 @@
+interface:
+  display_name: "Decision Recorder"
+  short_description: "Record durable project decisions and alternatives"
+  default_prompt: "Use $record-decision to capture this decision and link it to affected project artifacts."

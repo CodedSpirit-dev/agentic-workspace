@@ -1,0 +1,70 @@
+{
+  "schema_version": "2.1",
+  "project_modes": {
+    "traditional": {"directory": "phases", "cycle_label": "phase", "prefix": "PHS", "parallel": false},
+    "sprint": {"directory": "sprints", "cycle_label": "sprint", "prefix": "SPR", "parallel": false},
+    "flexible": {"directory": "workstreams", "cycle_label": "workstream", "prefix": "WST", "parallel": true}
+  },
+  "project_states": ["planned", "active", "blocked", "at-risk", "completed", "archived"],
+  "cycle_states": ["planned", "active", "blocked", "completed", "cancelled"],
+  "profiles": {
+    "minimal": ["core", "tasks", "decisions", "risks"],
+    "standard": ["core", "tasks", "decisions", "risks", "explorations", "findings", "specs", "verifications", "deliverables"],
+    "complex": ["core", "tasks", "decisions", "risks", "explorations", "findings", "analyses", "specs", "verifications", "deliverables", "project-scripts", "agent-orders"]
+  },
+  "modules": {
+    "core": {"files": ["index.md", "charter.md", "requirements.md", "plan.md", "status.md", "audit.md"], "directories": ["evidence"]},
+    "tasks": {"files": ["tasks.md"], "directories": ["tasks"]},
+    "decisions": {"files": ["decision-log.md"], "directories": ["registry/decisions"]},
+    "risks": {"files": ["risk-register.md"], "directories": ["registry/risks"]},
+    "explorations": {"files": [], "directories": ["explorations"]},
+    "findings": {"files": ["findings.md"], "directories": ["findings"]},
+    "analyses": {"files": [], "directories": ["analyses"]},
+    "specs": {"files": [], "directories": ["specs"]},
+    "verifications": {"files": [], "directories": ["verifications"]},
+    "deliverables": {"files": ["deliverable-manifest.md"], "directories": ["deliverables", "output"]},
+    "project-scripts": {"files": [], "directories": ["scripts"]},
+    "agent-orders": {"files": [], "directories": ["registry/agent-orders", "registry/conventions"]},
+    "column-dictionary": {"files": ["column-dictionary.yaml", "column-dictionary.md"], "directories": []},
+    "metric-catalog": {"files": ["metric-catalog.md"], "directories": []},
+    "migration-control": {"files": ["migration-control.md"], "directories": []}
+  },
+  "artifact_types": {
+    "requirement": {"prefix": "REQ", "directory": "registry/requirements", "states": ["draft", "active", "accepted", "superseded", "archived"]},
+    "task": {"prefix": "TSK", "directory": "tasks", "states": ["todo", "ready", "in_progress", "blocked", "done", "cancelled", "archived"]},
+    "exploration": {"prefix": "EXP", "directory": "explorations", "states": ["draft", "active", "blocked", "confirmed", "superseded", "archived"]},
+    "finding": {"prefix": "FND", "directory": "findings", "states": ["draft", "confirmed", "rejected", "superseded", "archived"]},
+    "analysis": {"prefix": "ANL", "directory": "analyses", "states": ["draft", "active", "blocked", "confirmed", "superseded", "archived"]},
+    "spec": {"prefix": "SPC", "directory": "specs", "states": ["draft", "active", "blocked", "implemented", "verified", "superseded", "archived"]},
+    "decision": {"prefix": "DEC", "directory": "registry/decisions", "states": ["draft", "accepted", "superseded", "rejected", "archived"]},
+    "convention": {"prefix": "CONV", "directory": "registry/conventions", "states": ["draft", "active", "superseded", "archived"]},
+    "risk": {"prefix": "RSK", "directory": "registry/risks", "states": ["open", "mitigating", "mitigated", "accepted", "closed", "archived"]},
+    "verification": {"prefix": "VER", "directory": "verifications", "states": ["draft", "active", "passed", "failed", "superseded", "archived"]},
+    "deliverable": {"prefix": "DEL", "directory": "deliverables", "states": ["draft", "active", "blocked", "verified", "accepted", "superseded", "archived"]},
+    "output": {"prefix": "OUT", "directory": "output", "states": ["generated", "verified", "superseded", "archived"]}
+  },
+  "relations": {
+    "source": {"directional": true},
+    "derived_from": {"directional": true},
+    "supports": {"directional": true},
+    "addresses": {"directional": true},
+    "implements": {"directional": true},
+    "verifies": {"directional": true},
+    "produces": {"directional": true},
+    "depends_on": {"directional": true},
+    "blocks": {"directional": true},
+    "supersedes": {"directional": true},
+    "related": {"directional": false}
+  },
+  "order_states": ["draft", "ready", "claimed", "in_progress", "blocked", "executed", "verified", "closed", "cancelled", "superseded", "failed"],
+  "order_transitions": {
+    "draft": ["ready", "cancelled", "superseded"],
+    "ready": ["claimed", "in_progress", "cancelled", "superseded"],
+    "claimed": ["in_progress", "ready", "cancelled"],
+    "in_progress": ["blocked", "executed", "failed"],
+    "blocked": ["in_progress", "failed", "cancelled"],
+    "executed": ["verified", "failed"],
+    "verified": ["closed", "failed"],
+    "closed": [], "cancelled": [], "superseded": [], "failed": []
+  }
+}

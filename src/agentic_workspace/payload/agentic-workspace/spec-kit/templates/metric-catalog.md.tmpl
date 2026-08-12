@@ -1,0 +1,24 @@
+# Metric Catalog — {PROJECT_TITLE}
+
+## Official Formulas
+
+| Metric | Formula | Notes |
+|---|---|---|
+| {metric_name} | {formula, e.g. `sum(actual_cost) / sum(quoted_cost)`} | {units, whether it's a decimal ratio or a percent, rounding rule} |
+
+## Deviation Registry
+
+Every place a real implementation departs from the official formula above is
+recorded here — never silently. An undocumented deviation is a bug; a
+documented one is a deliberate, approved exception.
+
+| ID | Pipeline / dataset | Deviation | Reason | Approved by | Date |
+|---|---|---|---|---|---|
+| DEV-01 | {pipeline_name} | {what differs from the official formula} | {why} | {name} | {YYYY-MM-DD} |
+
+## Percentage / Ratio Convention
+
+{State once, explicitly, whether ratio columns in this project are stored as
+decimals (0.33 = 33%) or as whole-number percents (33 = 33%) — and note any
+place a source system disagrees, cross-referencing the Deviation Registry
+above.}

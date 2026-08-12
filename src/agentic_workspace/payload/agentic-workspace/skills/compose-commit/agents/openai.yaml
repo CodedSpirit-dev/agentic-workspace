@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Composer"
+  short_description: "Compose conventional commits without AI trailers"
+  default_prompt: "Use $compose-commit to draft a conventional commit from the staged diff without co-authorship trailers."

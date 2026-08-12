@@ -1,0 +1,25 @@
+# Column Dictionary — {PROJECT_TITLE}
+
+## Scope
+
+{Which tables/views this dictionary covers, and which source system(s) they
+come from.}
+
+## Placement Rule
+
+{If this project's data spans more than one database or site, state the rule
+for where a given table lives and link the decision that owns that rule.}
+
+## Column Reference
+
+| Canonical name | Dtype | Unit | Source table.column | Alias(es) seen elsewhere | Meaning |
+|---|---|---|---|---|---|
+| {canonical_name} | {dtype} | {unit or "n/a"} | {source_table.source_column} | {alias1, alias2} | {plain-language meaning — what a non-technical stakeholder would understand} |
+
+## Cross-DB Compatibility Notes
+
+{If the same concept has different names/types/units across databases this
+project touches, note it here and cite the `decision-log.md` entry that
+picked the canonical name. `column-dictionary.yaml` is the machine-readable
+mirror of this table and wins on conflict — if the two disagree, that
+disagreement is itself a bug to fix, not a choice to make.}

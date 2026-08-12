@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-workspace.local/schemas/project-registry-2.1.json",
+  "title": "Agentic Workspace Project Registry",
+  "type": "object",
+  "required": [
+    "schema_version", "project", "profile", "mode", "state", "modules",
+    "counters", "artifacts", "relations", "cycles", "active_cycles",
+    "status_history"
+  ],
+  "properties": {
+    "schema_version": {"const": "2.1"},
+    "project": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "profile": {"enum": ["minimal", "standard", "complex"]},
+    "mode": {"enum": ["traditional", "sprint", "flexible"]},
+    "state": {"enum": ["planned", "active", "blocked", "at-risk", "completed", "archived"]},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "modules": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "counters": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "artifacts": {"type": "array", "items": {"$ref": "https://agentic-workspace.local/schemas/artifact-2.1.json"}},
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "type", "target"],
+        "properties": {
+          "source": {"type": "string"},
+          "type": {"type": "string"},
+          "target": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "cycles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "state", "path", "closure_evidence"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^(PHS|SPR|WST)-[0-9]{3,}$"},
+          "title": {"type": "string"},
+          "state": {"enum": ["planned", "active", "blocked", "completed", "cancelled"]},
+          "path": {"type": "string"},
+          "created_at": {"type": "string"},
+          "updated_at": {"type": "string"},
+          "closure_evidence": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "active_cycles": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "status_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "state", "summary"],
+        "properties": {
+          "at": {"type": "string"},
+          "state": {"type": "string"},
+          "summary": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

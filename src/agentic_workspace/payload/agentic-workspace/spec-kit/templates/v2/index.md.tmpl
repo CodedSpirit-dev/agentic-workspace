@@ -1,0 +1,37 @@
+# {{PROJECT_TITLE}}
+
+> Identity, state, paths, cycles, and relations are governed by
+> `registry/project.json`.
+
+## Objective
+
+(TODO: confirm)
+
+## Status
+
+See [`status.md`](status.md), the generated status history.
+
+## Navigation
+
+- `charter.md` — objective, ownership, boundaries, and success criteria
+- `requirements.md` — outcomes and acceptance criteria
+- `plan.md` — approach, dependencies, milestones, and verification
+- `tasks.md` — human-readable task overview; typed tasks live in `tasks/`
+- `decision-log.md` — decision overview; typed decisions live in `registry/decisions/`
+- `risk-register.md` — risk overview; typed risks live in `registry/risks/`
+- `deliverable-manifest.md` — formal outputs and acceptance evidence
+- `audit.md` — independent audits and closure gates
+- `registry/index.md` — generated artifact, relation, and cycle index
+
+Enabled modules and the selected mode are listed in `registry/project.json`.
+
+## Open questions
+
+- (TODO: confirm)
+
+Regenerate navigation with:
+
+```bash
+agentic-workspace/spec-kit/bin/project-kit index \
+  agentic-workspace/projects/{{PROJECT_NAME}}
+```

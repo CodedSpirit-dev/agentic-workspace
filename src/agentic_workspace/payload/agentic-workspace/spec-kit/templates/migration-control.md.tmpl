@@ -1,0 +1,16 @@
+# Migration Control — {PROJECT_TITLE}
+
+Per-object status tracker. One row per table, view, or dataset this project
+creates, migrates, or retires. A row's status changes in the same unit of
+work that actually performs the transition — never flipped ahead of time.
+
+**Status enum:** `pending | in-progress | migrated | future-move | deprecate`
+
+| # | Object | Companion tables/views | Owning pipeline | Consumers | Target location | Formula deviations | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | {schema.table_or_view} | {related objects} | {pipeline folder or "n/a"} | {dashboards/reports depending on this} | {target db/schema} | {link to metric-catalog.md DEV-NN, or "none"} | {pending} |
+
+## Notes
+
+{Anything not captured by the table — sequencing constraints between rows,
+why an object is being deprecated rather than migrated, etc.}

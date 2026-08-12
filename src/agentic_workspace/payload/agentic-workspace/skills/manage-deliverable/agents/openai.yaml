@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deliverable Manager"
+  short_description: "Register, verify, and hand off project outputs"
+  default_prompt: "Use $manage-deliverable to register this output and verify its acceptance evidence."

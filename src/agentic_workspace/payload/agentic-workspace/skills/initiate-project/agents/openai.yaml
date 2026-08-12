@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Initiator"
+  short_description: "Start projects in traditional, sprint, or flexible mode"
+  default_prompt: "Use $initiate-project to create a traceable project with the right delivery mode."

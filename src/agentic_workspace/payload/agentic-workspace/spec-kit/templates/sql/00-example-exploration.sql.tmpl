@@ -1,0 +1,16 @@
+-- Purpose: {what question this query answers}
+-- Grain: {one row per what}
+-- Date window: {exact filter applied, if any — e.g. >= '{date_from}' AND < '{date_to}'}
+-- Joins/assumptions: {any non-obvious join choice or exclusion, and why}
+-- Source: {system/database this runs against}
+-- Author/date: {name}, {YYYY-MM-DD}
+
+SELECT
+    {column_1},
+    {column_2},
+    {aggregate_expression} AS {output_alias}
+FROM {schema}.{table}
+WHERE {date_column} >= '{date_from}'
+  AND {date_column} <  '{date_to}'
+GROUP BY {column_1}, {column_2}
+ORDER BY {column_1};

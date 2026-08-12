@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Docs Curator"
+  short_description: "Keep AGENTS.md concise and documentation indexed"
+  default_prompt: "Use $maintain-agent-docs to migrate repository instructions into indexed agent documentation."
