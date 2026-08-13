@@ -18,3 +18,6 @@ Run when a project's subject is abandoned, superseded, or deleted (see
       at the original path and update the registry evidence.
 - [ ] Registered artifacts and orders use terminal `archived`, `cancelled`,
       `superseded`, or `closed` states as appropriate; history is preserved.
+- [ ] Any enabled `remediation-control` records an honest terminal disposition
+      for every governed finding; archiving the project does not silently erase
+      an unresolved finding.

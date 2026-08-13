@@ -67,6 +67,28 @@ class ProjectKitTests(unittest.TestCase):
         )
         return "VER-001"
 
+    def set_remediation_control(
+        self,
+        project,
+        status,
+        findings=("FND-001",),
+        remediations=("TSK-001",),
+        verifications=("VER-001",),
+    ):
+        path = project / "remediation-control.md"
+        replacements = {
+            "control_status": status,
+            "finding_ids": json.dumps(list(findings)),
+            "remediation_ids": json.dumps(list(remediations)),
+            "verification_ids": json.dumps(list(verifications)),
+        }
+        lines = path.read_text().splitlines()
+        for index, line in enumerate(lines):
+            key = line.split(":", 1)[0]
+            if key in replacements:
+                lines[index] = f"{key}: {replacements[key]}"
+        path.write_text("\n".join(lines) + "\n")
+
     def write_order_result(self, order_id="REPO-0001"):
         result_path = self.root / "result.json"
         result_path.write_text(
@@ -258,6 +280,105 @@ class ProjectKitTests(unittest.TestCase):
         enabled = json.loads((initialized / "registry/project.json").read_text())
         self.assertIn("software-architecture", enabled["modules"])
         self.assertTrue((initialized / "software-architecture.md").is_file())
+
+    def test_remediation_control_is_opt_in_and_validates_active_graph(self):
+        project = self.init("minimal")
+        self.assertFalse((project / "remediation-control.md").exists())
+        self.run_cli("add-module", project, "remediation-control")
+        self.assertTrue((project / "remediation-control.md").is_file())
+        self.run_cli("validate", project, "--strict-index")
+
+        self.run_cli(
+            "create", project, "finding", "--title", "Observed gap", "--status", "confirmed"
+        )
+        self.run_cli("create", project, "task", "--title", "Repair gap", "--status", "ready")
+        self.run_cli(
+            "create", project, "verification", "--title", "Acceptance", "--status", "active"
+        )
+        self.set_remediation_control(project, "active")
+
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("TSK-001 must reach a listed finding", result.stdout)
+        self.assertIn("FND-001 is not addressed", result.stdout)
+        self.assertIn("TSK-001 lacks a listed verification", result.stdout)
+
+        self.run_cli("relate", project, "TSK-001", "addresses", "FND-001")
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("TSK-001 lacks a listed verification", result.stdout)
+        self.run_cli("relate", project, "VER-001", "verifies", "TSK-001")
+        self.run_cli("validate", project, "--strict-index")
+        result = self.run_cli(
+            "status", "update", project, "--state", "completed",
+            "--summary", "Premature completion", ok=False,
+        )
+        self.assertIn("remediation-control is not completed", result.stderr)
+
+    def test_remediation_control_rejects_wrong_types_and_isolated_cycles(self):
+        project = self.init("minimal")
+        self.run_cli("add-module", project, "remediation-control")
+        self.run_cli(
+            "create", project, "finding", "--title", "Observed gap", "--status", "confirmed"
+        )
+        for title in ("First repair", "Second repair"):
+            self.run_cli("create", project, "task", "--title", title, "--status", "ready")
+        for title in ("First acceptance", "Second acceptance"):
+            self.run_cli(
+                "create", project, "verification", "--title", title, "--status", "active"
+            )
+        self.set_remediation_control(
+            project,
+            "active",
+            remediations=("TSK-001", "TSK-002"),
+            verifications=("VER-001", "VER-002"),
+        )
+        self.run_cli("relate", project, "TSK-001", "addresses", "TSK-002")
+        self.run_cli("relate", project, "TSK-002", "addresses", "TSK-001")
+        self.run_cli("relate", project, "VER-001", "verifies", "TSK-001")
+        self.run_cli("relate", project, "VER-002", "verifies", "TSK-002")
+
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("TSK-001 must reach a listed finding", result.stdout)
+        self.assertIn("TSK-002 must reach a listed finding", result.stdout)
+        self.assertIn("FND-001 is not addressed", result.stdout)
+
+        self.set_remediation_control(
+            project,
+            "active",
+            findings=("TSK-001",),
+            remediations=("FND-001",),
+            verifications=("VER-001",),
+        )
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("TSK-001 must be type finding", result.stdout)
+        self.assertIn("FND-001 must be type decision or risk or task", result.stdout)
+
+    def test_remediation_control_completed_requires_terminal_evidence(self):
+        project = self.init("minimal")
+        self.run_cli("add-module", project, "remediation-control")
+        self.run_cli(
+            "create", project, "finding", "--title", "Observed gap", "--status", "confirmed"
+        )
+        self.run_cli("create", project, "task", "--title", "Repair gap", "--status", "ready")
+        self.run_cli(
+            "create", project, "verification", "--title", "Acceptance", "--status", "active"
+        )
+        self.run_cli("relate", project, "TSK-001", "addresses", "FND-001")
+        self.run_cli("relate", project, "VER-001", "verifies", "TSK-001")
+        self.set_remediation_control(project, "completed")
+
+        result = self.run_cli("validate", project, "--strict-index", ok=False)
+        self.assertIn("requires FND-001 to be", result.stdout)
+        self.assertIn("requires TSK-001 to be done", result.stdout)
+        self.assertIn("requires VER-001 to be passed", result.stdout)
+
+        self.run_cli("artifact", "set-status", project, "FND-001", "resolved")
+        self.run_cli("artifact", "set-status", project, "TSK-001", "done")
+        evidence = self.evidence(project)
+        self.run_cli(
+            "artifact", "set-status", project, "VER-001", "passed",
+            "--method", "Automated regression", "--evidence", evidence,
+        )
+        self.run_cli("validate", project, "--strict-index")
 
     def test_stable_ids_gaps_and_duplicate_rejection(self):
         project = self.init()

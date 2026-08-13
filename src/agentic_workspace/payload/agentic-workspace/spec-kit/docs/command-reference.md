@@ -22,6 +22,7 @@ project-kit init software-example --mode sprint --profile standard \
   --with software-architecture
 project-kit add-module agentic-workspace/projects/example metric-catalog
 project-kit add-module agentic-workspace/projects/example software-architecture
+project-kit add-module agentic-workspace/projects/example remediation-control
 ```
 
 ## Cycles and project status
@@ -51,6 +52,12 @@ project-kit relate <project> DEL-001 addresses REQ-001
 project-kit relate <project> VER-001 verifies DEL-001
 project-kit artifact set-status <project> DEL-001 accepted
 ```
+
+For `remediation-control`, list governed IDs in `remediation-control.md`, relate
+each `TSK-*`, `DEC-*`, or `RSK-*` remediation to its `FND-*` with `addresses`,
+and relate a `VER-*` to each remediation with `verifies`. Change the control to
+`completed` only after findings, remediations, and verifications have the
+terminal states documented in that file.
 
 ## Validation and migration
 

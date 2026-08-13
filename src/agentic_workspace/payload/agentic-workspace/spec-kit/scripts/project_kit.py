@@ -422,6 +422,10 @@ def evidence_reference_errors(
 
 def project_completion_errors(project: Path, registry: dict) -> list[str]:
     errors: list[str] = []
+    if "remediation-control" in registry.get("modules", []):
+        control, _ = read_markdown_frontmatter(project / "remediation-control.md")
+        if control.get("control_status") != "completed":
+            errors.append("remediation-control is not completed")
     nonterminal_cycles = [
         cycle["id"]
         for cycle in registry.get("cycles", [])
@@ -1095,6 +1099,138 @@ def software_architecture_errors(project: Path, registry: dict) -> list[str]:
     return errors
 
 
+def remediation_control_errors(project: Path, registry: dict) -> list[str]:
+    """Validate finding-to-remediation-to-acceptance traceability."""
+    path = project / "remediation-control.md"
+    data, errors = read_markdown_frontmatter(path)
+    required = {
+        "control_status",
+        "finding_ids",
+        "remediation_ids",
+        "verification_ids",
+    }
+    for field in sorted(required - set(data)):
+        errors.append(f"{path.name} missing frontmatter field {field}")
+    status = data.get("control_status")
+    if status not in {"draft", "active", "completed"}:
+        errors.append(
+            f"{path.name} control_status must be draft, active, or completed"
+        )
+
+    typed_fields = {
+        "finding_ids": {"finding"},
+        "remediation_ids": {"task", "decision", "risk"},
+        "verification_ids": {"verification"},
+    }
+    artifacts = {item.get("id"): item for item in registry.get("artifacts", [])}
+    values: dict[str, list[str]] = {}
+    for field, expected_types in typed_fields.items():
+        refs = data.get(field, [])
+        if not isinstance(refs, list):
+            errors.append(f"{path.name} {field} must be a JSON list of IDs")
+            refs = []
+        if len(refs) != len(set(refs)):
+            errors.append(f"{path.name} {field} contains duplicate IDs")
+        values[field] = refs
+        for reference in refs:
+            artifact = artifacts.get(reference)
+            if not artifact:
+                errors.append(f"{path.name} {field} missing artifact: {reference}")
+            elif artifact.get("type") not in expected_types:
+                expected = " or ".join(sorted(expected_types))
+                errors.append(
+                    f"{path.name} {reference} must be type {expected}, "
+                    f"not {artifact.get('type')}"
+                )
+
+    if status not in {"active", "completed"}:
+        return errors
+
+    for field in typed_fields:
+        if not values[field]:
+            errors.append(f"{path.name} {status} control requires {field}")
+
+    finding_ids = set(values["finding_ids"])
+    remediation_ids = set(values["remediation_ids"])
+    verification_ids = set(values["verification_ids"])
+    controlled = finding_ids | remediation_ids
+    adjacency: dict[str, set[str]] = {artifact_id: set() for artifact_id in controlled}
+    relations = registry.get("relations", [])
+    for relation in relations:
+        source = relation.get("source")
+        target = relation.get("target")
+        if (
+            relation.get("type") == "addresses"
+            and source in controlled
+            and target in controlled
+        ):
+            adjacency[source].add(target)
+
+    reachable_by_remediation: dict[str, set[str]] = {}
+    for remediation_id in remediation_ids:
+        visited: set[str] = set()
+        pending = [remediation_id]
+        while pending:
+            current = pending.pop()
+            if current in visited:
+                continue
+            visited.add(current)
+            pending.extend(adjacency.get(current, set()) - visited)
+        reached = finding_ids & visited
+        reachable_by_remediation[remediation_id] = reached
+        if not reached:
+            errors.append(
+                f"{path.name} {remediation_id} must reach a listed finding "
+                "through addresses"
+            )
+        if not any(
+            relation.get("source") in verification_ids
+            and relation.get("type") == "verifies"
+            and relation.get("target") == remediation_id
+            for relation in relations
+        ):
+            errors.append(
+                f"{path.name} {remediation_id} lacks a listed verification relation"
+            )
+    for finding_id in finding_ids:
+        if not any(
+            finding_id in reached for reached in reachable_by_remediation.values()
+        ):
+            errors.append(
+                f"{path.name} {finding_id} is not addressed by a listed remediation"
+            )
+    for verification_id in verification_ids:
+        if not any(
+            relation.get("source") == verification_id
+            and relation.get("type") == "verifies"
+            and relation.get("target") in remediation_ids
+            for relation in relations
+        ):
+            errors.append(
+                f"{path.name} {verification_id} does not verify a listed remediation"
+            )
+
+    if status == "completed":
+        terminal_states = {
+            "finding": {"resolved", "rejected", "superseded", "archived"},
+            "task": {"done"},
+            "decision": {"accepted"},
+            "risk": {"mitigated", "accepted", "closed"},
+            "verification": {"passed"},
+        }
+        for artifact_id in finding_ids | remediation_ids | verification_ids:
+            artifact = artifacts.get(artifact_id)
+            if not artifact or artifact.get("type") not in terminal_states:
+                continue
+            allowed = terminal_states[artifact["type"]]
+            if artifact.get("status") not in allowed:
+                errors.append(
+                    f"{path.name} completed control requires {artifact_id} "
+                    f"to be {', '.join(sorted(allowed))}, not {artifact.get('status')}"
+                )
+    return errors
+
+
 def validate_project(project: Path, strict_index: bool = False) -> list[str]:
     errors = []
     registry = load_registry(project)
@@ -1219,6 +1355,8 @@ def validate_project(project: Path, strict_index: bool = False) -> list[str]:
             errors.append(f"prohibited self relation: {rel}")
     if "software-architecture" in registry.get("modules", []):
         errors.extend(software_architecture_errors(project, registry))
+    if "remediation-control" in registry.get("modules", []):
+        errors.extend(remediation_control_errors(project, registry))
     order_ids = []
     for directory, ctx in order_contexts(project):
         order_ids.append(ctx.get("order_id"))

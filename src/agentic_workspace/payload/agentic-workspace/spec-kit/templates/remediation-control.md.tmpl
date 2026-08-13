@@ -1,0 +1,50 @@
+---
+control_status: draft
+finding_ids: []
+remediation_ids: []
+verification_ids: []
+---
+
+# Remediation Control — {{PROJECT_TITLE}}
+
+**Owner:** `(TODO: confirm)`
+**Last reviewed:** {{DATE}}
+
+## Control boundary
+
+- Audit, inventory, or analysis source: `(TODO: confirm)`
+- Governed scope: `(TODO: confirm)`
+- Explicit exclusions: `(TODO: confirm)`
+
+## Traceability contract
+
+The frontmatter is the machine-readable control surface:
+
+- `finding_ids` lists governed `FND-*` artifacts;
+- `remediation_ids` lists the `TSK-*`, `DEC-*`, or `RSK-*` artifacts that
+  dispose those findings;
+- `verification_ids` lists the independent `VER-*` acceptance artifacts.
+
+Keep `control_status: draft` while the inventory is incomplete. For `active`,
+every remediation must reach a listed finding through directed `addresses`
+relations, every finding must be reached, and each remediation must have a
+listed verification related as `VER-* verifies <remediation>`. This rejects
+orphan findings, unverified fixes, and isolated remediation cycles.
+
+For `completed`, findings must be `resolved`, `rejected`, `superseded`, or
+`archived`; remediation tasks must be `done`, decisions `accepted`, and risks
+`mitigated`, `accepted`, or `closed`. Every verification must be `passed` with
+its required method and evidence.
+
+## Finding dispositions
+
+| Finding | Remediation | Disposition | Verification | Evidence |
+|---|---|---|---|---|
+| `(TODO: confirm)` | `(TODO: confirm)` | `(TODO: confirm)` | `(TODO: confirm)` | `(TODO: confirm)` |
+
+## Residual risk and exclusions
+
+- `(TODO: confirm)`
+
+Use `project-kit create`, `artifact set-status`, and `relate` for authoritative
+IDs, states, and relations. Do not edit generated registry indexes.

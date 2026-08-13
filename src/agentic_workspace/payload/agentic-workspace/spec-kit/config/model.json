@@ -28,13 +28,14 @@
     "column-dictionary": {"files": ["column-dictionary.yaml", "column-dictionary.md"], "directories": []},
     "metric-catalog": {"files": ["metric-catalog.md"], "directories": []},
     "migration-control": {"files": ["migration-control.md"], "directories": []},
-    "software-architecture": {"files": ["software-architecture.md"], "directories": ["registry/conventions"]}
+    "software-architecture": {"files": ["software-architecture.md"], "directories": ["registry/conventions"]},
+    "remediation-control": {"files": ["remediation-control.md"], "directories": []}
   },
   "artifact_types": {
     "requirement": {"prefix": "REQ", "directory": "registry/requirements", "states": ["draft", "active", "accepted", "superseded", "archived"]},
     "task": {"prefix": "TSK", "directory": "tasks", "states": ["todo", "ready", "in_progress", "blocked", "done", "cancelled", "archived"]},
     "exploration": {"prefix": "EXP", "directory": "explorations", "states": ["draft", "active", "blocked", "confirmed", "superseded", "archived"]},
-    "finding": {"prefix": "FND", "directory": "findings", "states": ["draft", "confirmed", "rejected", "superseded", "archived"]},
+    "finding": {"prefix": "FND", "directory": "findings", "states": ["draft", "confirmed", "resolved", "rejected", "superseded", "archived"]},
     "analysis": {"prefix": "ANL", "directory": "analyses", "states": ["draft", "active", "blocked", "confirmed", "superseded", "archived"]},
     "spec": {"prefix": "SPC", "directory": "specs", "states": ["draft", "active", "blocked", "implemented", "verified", "superseded", "archived"]},
     "decision": {"prefix": "DEC", "directory": "registry/decisions", "states": ["draft", "accepted", "superseded", "rejected", "archived"]},

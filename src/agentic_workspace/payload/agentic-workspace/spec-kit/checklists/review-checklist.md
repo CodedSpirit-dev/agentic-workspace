@@ -39,6 +39,10 @@ Apply these only when the corresponding optional module is listed in
   any hybrid, and its frontmatter status agrees with the registered `DEC-*`,
   enforceable conventions, risks, verifications, and relations required by that
   state.
+- `remediation-control`: every listed finding is reached from a typed
+  remediation through `addresses`, every remediation has a listed verification,
+  and a completed control uses terminal dispositions plus passed verification
+  method and evidence.
 - Any installed extension: every release or audit gate declared by that
   extension has evidence. An extension must not silently add universal rules.
 
@@ -54,6 +58,9 @@ Apply these only when the corresponding optional module is listed in
   blast radius, verification, and a recovery path.
 - A decision-log entry has been edited to reverse its own conclusion instead
   of superseded by a new entry.
+- Project-owned status, audits, inventories, findings, decisions, deliverables,
+  remediation, or acceptance evidence have a parallel owner under `docs/` or
+  another plan.
 
 ## WARNINGS
 

@@ -12,6 +12,14 @@ python3 agentic-workspace/spec-kit/bin/project-kit.py validate \
   agentic-workspace/projects/example --strict-index
 ```
 
+Add `remediation-control` to audit or improvement projects that must prove each
+finding has a governed disposition and acceptance evidence:
+
+```bash
+python3 agentic-workspace/spec-kit/bin/project-kit.py add-module \
+  agentic-workspace/projects/example remediation-control
+```
+
 These examples use the POSIX `python3` name. On Windows, use `py -3.11` and
 Windows path separators. The extensionless Bash wrapper is retained for POSIX
 shells, and an installed product package exposes the cross-platform

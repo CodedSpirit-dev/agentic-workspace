@@ -13,6 +13,8 @@ standing production artifact (see `docs/lifecycle.md` state 8).
 - [ ] Stakeholder sign-off is recorded in `deliverable-manifest.md`.
 - [ ] If the optional `migration-control` module is enabled, its final status
       is recorded for every governed object; no required row remains pending.
+- [ ] If `remediation-control` is enabled, its status is `completed` and all
+      listed findings, remediations, and verifications pass strict validation.
 - [ ] `plan.md`'s Promotion section is filled: target path, objects
       created/modified, irreversible-operation flags, and a link to the
       passing audit entry.

@@ -31,4 +31,7 @@ unchecked.
 - [ ] If `software-architecture` is enabled, its assessment names the decision
       boundary and source requirements/specs; no architecture has been selected
       from framework preference alone.
+- [ ] If `remediation-control` is enabled, the audit or improvement boundary is
+      named and every governed finding, remediation, and acceptance
+      verification will remain inside this project.
 - [ ] `project-kit validate <project> --strict-index` returns `PASS`.
