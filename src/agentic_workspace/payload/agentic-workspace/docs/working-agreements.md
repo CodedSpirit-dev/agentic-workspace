@@ -32,3 +32,11 @@ Use `tasks/` for bounded work, `plans/` for a short coordinated sequence, and
 `projects/` when work gains multiple cycles, decisions, deliverables, agents,
 dependencies, or durable evidence. Promotion preserves the original ID and
 source context.
+
+Apply the ownership precedence in
+[`documentation-routing.md`](documentation-routing.md) before creating or
+moving documentation. An audit, inventory, historical analysis, decision,
+finding, deliverable, or remediation related to an existing project remains
+inside that project even when it was not named in the initial task list. Expand
+the project scope transparently or record a decision; do not create a parallel
+owner under `docs/`.

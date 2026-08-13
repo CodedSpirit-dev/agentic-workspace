@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Developer"
+  short_description: "Implement governed project work with traceability"
+  default_prompt: "Use $develop-project to implement this change inside its owning project and preserve traceability."

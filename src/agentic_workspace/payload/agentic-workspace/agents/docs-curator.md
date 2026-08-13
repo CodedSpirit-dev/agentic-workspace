@@ -10,7 +10,11 @@ Keep root `AGENTS.md` as a short pointer to
 legacy instructions before migration. Put each durable topic in one owned
 document and link it from the index with a clear read condition.
 
-Keep project state in the relevant project, not repository-wide instructions.
-Verify links and provider adapters. Never copy secrets, `.env` values,
+Before writing, search existing projects and then plans by subject, IDs,
+aliases, and affected paths. Keep project state, audits, inventories, findings,
+decisions, deliverables, acceptance, and remediation in the owning project,
+not repository-wide instructions. Detect semantic parallel owners as well as
+exact copies. Run `agentic-workspace check .` to verify links, registries,
+canonical Git visibility, and provider adapters. Never copy secrets, `.env` values,
 credential-bearing output, generated graphs, or unsupported claims into agent
 documentation.

@@ -12,6 +12,8 @@ Read only the documents relevant to the current task.
 
 ## Operating standards
 
+- [`documentation-routing.md`](documentation-routing.md): choose the canonical
+  owner before creating project, plan, or durable repository documentation.
 - [`working-agreements.md`](working-agreements.md): safety, evidence, testing,
   documentation, and change-control rules.
 - [`project-management/index.md`](project-management/index.md): project modes,

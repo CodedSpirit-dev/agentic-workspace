@@ -17,6 +17,17 @@ Every mode has:
 See [`modes.md`](modes.md) for mode selection and [`artifacts.md`](artifacts.md)
 for artifact ownership.
 
+Audits, inventories, historical analyses, findings, remediation, and acceptance
+evidence remain inside the project that owns their subject. When an initiative
+requires complete finding disposition, enable the opt-in
+`remediation-control` module; it validates `FND-*` →
+`TSK-*`/`DEC-*`/`RSK-*` → `VER-*` traceability through registry relations.
+
+Use `initiate-project` to create or promote an owner, `develop-project` while
+implementing its governed work, `track-project` for evidence-based status, and
+`audit-project` for an independent gate. These skills share the same routing
+and registry contract instead of creating provider-specific project records.
+
 ## Commands
 
 ```bash

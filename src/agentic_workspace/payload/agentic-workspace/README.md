@@ -3,6 +3,12 @@
 This directory is the repository-local source of truth for agent procedures
 and project execution. Start with [`docs/index.md`](docs/index.md).
 
+Before creating documentation, follow
+[`docs/documentation-routing.md`](docs/documentation-routing.md): use an
+existing project first, then a bounded plan, and reserve `docs/` for durable
+repository knowledge. Project state, audits, inventories, findings, decisions,
+and remediation must not be mirrored under `docs/`.
+
 ## Stable surfaces
 
 - `projects/`: governed projects in traditional, sprint, or flexible mode.
