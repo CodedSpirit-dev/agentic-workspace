@@ -31,6 +31,10 @@ destination repository
 - `src/agentic_workspace/payload/agentic-workspace/spec-kit/` owns deterministic project state and
   validation.
 - provider folders contain adapters only; they do not own policy.
+- destination Git ignore rules may exclude regenerable provider adapters, but
+  must not exclude canonical files under `agentic-workspace/skills/` or
+  `agentic-workspace/agents/`; `agentic-workspace check` enforces this with
+  `git check-ignore --no-index`.
 - a destination project's `registry/project.json` owns IDs, states,
   relations, cycles, and status history.
 - Markdown owns narrative, rationale, and evidence; generated indexes are
@@ -47,6 +51,10 @@ files. An update overwrites a file only when it is new, already equal to the
 new payload, or still equal to the previously installed version. Local
 modifications are preserved and reported. User-created projects and working
 artifacts are never part of the managed payload.
+
+`check` separately validates repository-owned projects with the installed
+Project Kit, relative documentation links, and exact copies spanning canonical
+documentation owners. These checks do not rewrite user content.
 
 ## Provider compatibility
 

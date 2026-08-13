@@ -63,6 +63,18 @@ Verify an installation with:
 agentic-workspace check /path/to/repository
 ```
 
+`check` also rejects ignored canonical skills or agents, broken relative
+documentation links, exact cross-owner documentation copies, and invalid
+projects discovered under `agentic-workspace/projects/`.
+
+## Documentation ownership
+
+Before creating a document, search for an existing project that owns the
+subject. If none exists, use a bounded plan for coordinated work. Use
+`agentic-workspace/docs/` only for durable repository knowledge that remains
+valid after the work closes; do not mirror project status, findings, decisions,
+inventories, or remediation there.
+
 ## Project modes
 
 Each project under `agentic-workspace/projects/` selects one execution mode
@@ -83,6 +95,17 @@ For a software project that needs an architecture decision, add the opt-in
 compares FSD, Clean Architecture, Vertical Slice Architecture, Atomic Design,
 and a simple package-by-layer baseline against the project's specs; it does not
 impose one structure on every repository.
+
+For an audit or improvement initiative that must prove every finding has a
+disposition and acceptance evidence, add the opt-in `remediation-control`
+module. Its active and completed states are validated against typed registry
+relations instead of prose counts.
+
+During implementation, invoke `develop-project` or the `project-developer`
+agent. They locate the existing project owner before editing, keep newly
+discovered objective-required work in that project, preserve architecture and
+registry relationships, and require tests plus strict validation before status
+transitions.
 
 Create the first project after installation:
 

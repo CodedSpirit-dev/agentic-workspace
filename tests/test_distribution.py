@@ -147,10 +147,14 @@ class DistributionTests(unittest.TestCase):
             "agentic_workspace/payload/agentic-workspace/extensions/software/docs/architecture-methods.md",
             "agentic_workspace/payload/agentic-workspace/extensions/software/docs/selection-guide.md",
             "agentic_workspace/payload/agentic-workspace/agents/software-architect.md",
+            "agentic_workspace/payload/agentic-workspace/agents/project-developer.md",
+            "agentic_workspace/payload/agentic-workspace/skills/develop-project/SKILL.md",
+            "agentic_workspace/payload/agentic-workspace/skills/develop-project/agents/openai.yaml",
             "agentic_workspace/payload/agentic-workspace/skills/select-software-architecture/SKILL.md",
             "agentic_workspace/payload/agentic-workspace/skills/select-software-architecture/agents/openai.yaml",
             "agentic_workspace/payload/agentic-workspace/skills/select-software-architecture/references/decision-output.md",
             "agentic_workspace/payload/agentic-workspace/spec-kit/templates/software-architecture.md.tmpl",
+            "agentic_workspace/payload/agentic-workspace/spec-kit/templates/remediation-control.md.tmpl",
         )
         for suffix in expected_suffixes:
             self.assertTrue(any(name.endswith(suffix) for name in wheel_names), suffix)
@@ -247,6 +251,8 @@ class DistributionTests(unittest.TestCase):
                 "minimal",
                 "--with",
                 "software-architecture",
+                "--with",
+                "remediation-control",
             ],
             cwd=repository,
             text=True,
@@ -256,10 +262,12 @@ class DistributionTests(unittest.TestCase):
         project = repository / "agentic-workspace/projects/portable-smoke"
         self.assertTrue((project / "registry/project.json").is_file())
         self.assertTrue((project / "software-architecture.md").is_file())
+        self.assertTrue((project / "remediation-control.md").is_file())
         installed_registry = json.loads(
             (project / "registry/project.json").read_text(encoding="utf-8")
         )
         self.assertIn("software-architecture", installed_registry["modules"])
+        self.assertIn("remediation-control", installed_registry["modules"])
         subprocess.run(
             [str(self.project_kit), "validate", str(project), "--strict-index"],
             cwd=repository,

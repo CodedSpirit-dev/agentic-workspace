@@ -56,6 +56,10 @@ class InstallerTests(unittest.TestCase):
         agents = (self.repo / "AGENTS.md").read_text()
         self.assertIn("managed-by: agentic-workspace", agents)
         self.assertIn("agentic-workspace/docs/index.md", agents)
+        self.assertIn("existing project first, then a bounded plan", agents)
+        self.assertTrue(
+            (self.repo / "agentic-workspace/docs/documentation-routing.md").is_file()
+        )
         self.assertTrue((self.repo / "CLAUDE.md").is_symlink())
         self.assertEqual("AGENTS.md", os.readlink(self.repo / "CLAUDE.md"))
         self.assertEqual(
@@ -69,6 +73,7 @@ class InstallerTests(unittest.TestCase):
 
         for skill_root in (".agents/skills", ".claude/skills", ".hermes/skills"):
             self.assertTrue((self.repo / skill_root / "track-project/SKILL.md").is_file())
+            self.assertTrue((self.repo / skill_root / "develop-project/SKILL.md").is_file())
             self.assertTrue(
                 (
                     self.repo
@@ -77,10 +82,13 @@ class InstallerTests(unittest.TestCase):
                 ).is_file()
             )
         self.assertTrue((self.repo / ".codex/agents/project-steward.toml").is_file())
+        self.assertTrue((self.repo / ".codex/agents/project-developer.toml").is_file())
         self.assertTrue((self.repo / ".codex/agents/software-architect.toml").is_file())
         self.assertTrue((self.repo / ".claude/agents/project-steward.md").is_symlink())
+        self.assertTrue((self.repo / ".claude/agents/project-developer.md").is_symlink())
         self.assertTrue((self.repo / ".claude/agents/software-architect.md").is_symlink())
         self.assertTrue((self.repo / ".hermes/agents/project-steward.md").is_symlink())
+        self.assertTrue((self.repo / ".hermes/agents/project-developer.md").is_symlink())
         self.assertTrue((self.repo / ".hermes/agents/software-architect.md").is_symlink())
 
         codex_hooks = json.loads((self.repo / ".codex/hooks.json").read_text())
@@ -213,6 +221,75 @@ class InstallerTests(unittest.TestCase):
         shutil.rmtree(adapter)
         result = self.run_cli("check", self.repo, ok=False)
         self.assertIn("disconnected managed adapter: .agents/skills/track-project", result.stdout)
+
+    def test_check_rejects_ignored_canonical_skill_sources(self):
+        self.run_cli("install", self.repo)
+        (self.repo / ".gitignore").write_text("agentic-workspace/skills/\n")
+
+        result = self.run_cli("check", self.repo, ok=False)
+
+        self.assertIn("canonical source is ignored by Git", result.stdout)
+        self.assertIn("agentic-workspace/skills/track-project/SKILL.md", result.stdout)
+
+    def test_check_allows_ignored_regenerable_provider_adapters(self):
+        self.run_cli("install", self.repo)
+        (self.repo / ".gitignore").write_text(
+            ".agents/\n.claude/\n.hermes/\n.codex/\n"
+        )
+
+        self.run_cli("check", self.repo)
+
+    def test_check_strictly_validates_every_governed_project(self):
+        self.run_cli("install", self.repo)
+        launcher = self.repo / "agentic-workspace/spec-kit/bin/project-kit.py"
+        subprocess.run(
+            [
+                sys.executable,
+                str(launcher),
+                "init",
+                "broken-project",
+                "--root",
+                str(self.repo / "agentic-workspace/projects"),
+                "--profile",
+                "minimal",
+            ],
+            cwd=self.repo,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        self.run_cli("check", self.repo)
+        (self.repo / "agentic-workspace/projects/broken-project/status.md").write_text(
+            "stale\n"
+        )
+
+        result = self.run_cli("check", self.repo, ok=False)
+
+        self.assertIn("project broken-project: status view is stale", result.stdout)
+
+    def test_check_rejects_broken_links_and_exact_cross_owner_copies(self):
+        self.run_cli("install", self.repo)
+        plans = self.repo / "agentic-workspace/plans"
+        plans.joinpath("broken.md").write_text("[missing](does-not-exist.md)\n")
+
+        result = self.run_cli("check", self.repo, ok=False)
+        self.assertIn("broken documentation link", result.stdout)
+
+        plans.joinpath("broken.md").unlink()
+        plans.joinpath("absolute.md").write_text("[private](C:\\private\\notes.md)\n")
+        result = self.run_cli("check", self.repo, ok=False)
+        self.assertIn("non-portable absolute documentation link", result.stdout)
+        plans.joinpath("absolute.md").unlink()
+
+        duplicate = "# Canonical state\n\nOne owner only.\n"
+        self.repo.joinpath("agentic-workspace/docs/parallel.md").write_text(duplicate)
+        project = self.repo / "agentic-workspace/projects/parallel"
+        project.mkdir()
+        project.joinpath("notes.md").write_text(duplicate)
+
+        result = self.run_cli("check", self.repo, ok=False)
+        self.assertIn("exact documentation copies cross canonical owners", result.stdout)
+        self.assertIn("project parallel: missing registry/project.json", result.stdout)
 
     def test_unexpected_valid_hook_json_is_preserved_and_diagnosed(self):
         hook = self.repo / ".codex/hooks.json"

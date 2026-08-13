@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -12,6 +13,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from pathlib import PurePosixPath, PureWindowsPath
+from urllib.parse import unquote
 
 from . import __version__
 
@@ -20,6 +22,13 @@ PRODUCT_ROOT = Path(__file__).resolve().parents[2]
 PAYLOAD_ROOT = Path(__file__).resolve().parent / "payload"
 MANIFEST = Path("agentic-workspace/.managed-manifest.json")
 MANAGED_MARKER = "<!-- managed-by: agentic-workspace -->"
+MARKDOWN_LINK_RE = re.compile(
+    r"!?\[[^\]]*\]\((?P<target><[^>]+>|[^\s)]+)"
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\)"
+)
+MARKDOWN_REFERENCE_RE = re.compile(
+    r"^\s*\[[^\]]+\]:\s*(?P<target><[^>]+>|\S+)"
+)
 
 
 class InstallError(RuntimeError):
@@ -282,6 +291,9 @@ Before working in this repository, read [`agentic-workspace/docs/index.md`](agen
 Use the indexed documentation, project registry, skills, agents, and hooks from
 `agentic-workspace/`. Keep detailed repository knowledge out of this file so Codex,
 Claude Code, Hermes, and other agents share the same source of truth.
+
+Route documentation to an existing project first, then a bounded plan; use
+`agentic-workspace/docs/` only for durable repository knowledge.
 """
     root_agents_hash = digest_bytes(root_agents.encode("utf-8"))
     previous_hash = previous.get("entry_points", {}).get("AGENTS.md")
@@ -884,6 +896,210 @@ def hook_invokes_canonical(hook: Path, canonical: Path, target: Path) -> bool:
     return candidate == relative
 
 
+def canonical_git_source_errors(target: Path) -> list[str]:
+    """Reject canonical provider-neutral sources hidden by repository ignores."""
+    if git_toplevel(target) is None:
+        return []
+    sources: list[Path] = []
+    for root in (
+        target / "agentic-workspace/skills",
+        target / "agentic-workspace/agents",
+    ):
+        if root.is_dir():
+            sources.extend(
+                path
+                for path in root.rglob("*")
+                if path.is_file() and not path.is_symlink()
+            )
+    errors: list[str] = []
+    for source in sorted(sources):
+        rel = portable_relative(source, target)
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(target),
+                "check-ignore",
+                "--no-index",
+                "--verbose",
+                "--",
+                rel,
+            ],
+            text=True,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            rule = result.stdout.strip().replace("\t", " -> ")
+            errors.append(
+                f"canonical source is ignored by Git: {rel}"
+                + (f" ({rule})" if rule else "")
+            )
+        elif result.returncode != 1:
+            detail = result.stderr.strip() or f"exit {result.returncode}"
+            errors.append(f"could not inspect Git ignore rules for {rel}: {detail}")
+            break
+    return errors
+
+
+def canonical_markdown_files(target: Path) -> tuple[list[Path], list[str]]:
+    workspace = target / "agentic-workspace"
+    candidates = [workspace / "README.md"]
+    for name in ("docs", "projects", "plans", "tasks"):
+        root = workspace / name
+        if root.is_dir():
+            candidates.extend(root.rglob("*.md"))
+    files: list[Path] = []
+    errors: list[str] = []
+    for path in sorted(set(candidates)):
+        try:
+            rel = path.relative_to(workspace)
+        except ValueError:
+            continue
+        if rel.parts[:2] == ("docs", "imported"):
+            continue
+        if path.is_symlink():
+            errors.append(
+                f"canonical documentation must not be a symlink: "
+                f"{portable_relative(path, target)}"
+            )
+        elif path.is_file():
+            files.append(path)
+    return files, errors
+
+
+def _local_markdown_target(raw: str) -> str | None:
+    value = raw.strip()
+    if value.startswith("<") and value.endswith(">"):
+        value = value[1:-1]
+    if not value or value.startswith(("#", "//")):
+        return None
+    if PureWindowsPath(value).drive:
+        return value
+    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", value):
+        return None
+    return unquote(value.split("#", 1)[0].split("?", 1)[0])
+
+
+def documentation_integrity_errors(target: Path) -> list[str]:
+    """Validate local links and reject byte-identical cross-owner documents."""
+    workspace = target / "agentic-workspace"
+    files, errors = canonical_markdown_files(target)
+    for path in files:
+        in_fence = False
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
+        ):
+            stripped = line.lstrip()
+            if stripped.startswith(("```", "~~~")):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            matches = list(MARKDOWN_LINK_RE.finditer(line))
+            reference = MARKDOWN_REFERENCE_RE.match(line)
+            if reference:
+                matches.append(reference)
+            for match in matches:
+                local = _local_markdown_target(match.group("target"))
+                if not local:
+                    continue
+                rel_path = portable_path(local)
+                if rel_path.is_absolute() or PureWindowsPath(local).drive:
+                    errors.append(
+                        f"non-portable absolute documentation link: "
+                        f"{portable_relative(path, target)}:{line_number} -> {local}"
+                    )
+                    continue
+                destination = (path.parent / rel_path).resolve(strict=False)
+                try:
+                    destination.relative_to(target)
+                except ValueError:
+                    errors.append(
+                        f"documentation link escapes repository: "
+                        f"{portable_relative(path, target)}:{line_number} -> {local}"
+                    )
+                    continue
+                if not destination.exists():
+                    errors.append(
+                        f"broken documentation link: "
+                        f"{portable_relative(path, target)}:{line_number} -> {local}"
+                    )
+
+    by_digest: dict[str, list[Path]] = {}
+    for path in files:
+        content = path.read_bytes()
+        if content.strip():
+            by_digest.setdefault(digest_bytes(content), []).append(path)
+    ownership_roots = {"docs", "projects", "plans", "tasks"}
+    for duplicates in by_digest.values():
+        owners = {
+            path.relative_to(workspace).parts[0]
+            for path in duplicates
+            if path.relative_to(workspace).parts[0] in ownership_roots
+        }
+        if len(owners) > 1:
+            rendered = ", ".join(
+                portable_relative(path, target) for path in sorted(duplicates)
+            )
+            errors.append(f"exact documentation copies cross canonical owners: {rendered}")
+    return errors
+
+
+def installed_project_errors(target: Path) -> list[str]:
+    """Run the bundled strict validator for every governed destination project."""
+    projects_root = target / "agentic-workspace/projects"
+    launcher = target / "agentic-workspace/spec-kit/bin/project-kit.py"
+    if not projects_root.is_dir() or not launcher.is_file():
+        return []
+    errors: list[str] = []
+    for project in sorted(projects_root.iterdir()):
+        if project.is_symlink():
+            errors.append(
+                f"project directory must not be a symlink: "
+                f"{portable_relative(project, target)}"
+            )
+            continue
+        registry = project / "registry/project.json"
+        if not project.is_dir():
+            continue
+        if not registry.exists():
+            errors.append(
+                f"project {project.name}: missing registry/project.json; "
+                "initialize or migrate the project with Project Kit"
+            )
+            continue
+        if registry.is_symlink() or not registry.is_file():
+            errors.append(
+                f"project registry must be a regular file: "
+                f"{portable_relative(registry, target)}"
+            )
+            continue
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(launcher),
+                "validate",
+                str(project),
+                "--strict-index",
+            ],
+            cwd=target,
+            text=True,
+            capture_output=True,
+        )
+        if result.returncode:
+            details = [
+                line.removeprefix("FAIL: ")
+                for line in result.stdout.splitlines()
+                if line.strip()
+            ]
+            if not details:
+                details = [line for line in result.stderr.splitlines() if line.strip()]
+            if not details:
+                details = [f"validator exited with {result.returncode}"]
+            errors.extend(f"project {project.name}: {detail}" for detail in details)
+    return errors
+
+
 def check(args: argparse.Namespace) -> int:
     target = Path(args.target).expanduser().resolve()
     manifest = load_manifest(target)
@@ -959,6 +1175,9 @@ def check(args: argparse.Namespace) -> int:
                 f"Git commit guard is disconnected: {detail}; chain "
                 "agentic-workspace/hooks/git/commit-msg from the existing hook"
             )
+    failures.extend(canonical_git_source_errors(target))
+    failures.extend(documentation_integrity_errors(target))
+    failures.extend(installed_project_errors(target))
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:
